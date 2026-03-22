@@ -23,7 +23,8 @@ export async function POST(request: Request) {
     const suddenDrops = customers.filter(c => c.pattern === 'sudden_drop')
     const gradualFades = customers.filter(c => c.pattern === 'gradual_fade')
     const groupChurns = customers.filter(c => c.pattern === 'group_churn')
-    const atRiskRevenue = critical.reduce((s, c) => s + c.avgTransactionValue * 12, 0)
+    const ANNUAL_VISITS = 104 // coffee shop: ~2 visits/week
+    const atRiskRevenue = critical.reduce((s, c) => s + c.avgTransactionValue * ANNUAL_VISITS, 0)
     const topAtRisk = critical.sort((a, b) => b.churnScore - a.churnScore).slice(0, 3)
 
     const businessData = business || { name: 'Hayward Coffee Co.', type: 'coffee_shop', voiceId: '21m00Tcm4TlvDq8ikWAM', voiceName: 'Rachel' }
@@ -60,7 +61,7 @@ Name actual customers. End with one specific action.`
       script = briefingMsg.content[0].type === 'text' ? briefingMsg.content[0].text : ''
     } catch (e) {
       const top = topAtRisk[0]
-      script = `Your biggest risk right now is ${top?.name || 'a critical customer'}. They've been gone ${top?.daysSinceVisit || 'too many'} days. You have ${critical.length} critical customers representing $${atRiskRevenue.toFixed(0)} in at-risk revenue. Today's action: reach out to your highest-risk customer. One call could recover over $${((top?.avgTransactionValue || 8) * 12).toFixed(0)} for the year.`
+      script = `Your biggest risk right now is ${top?.name || 'a critical customer'}. They've been gone ${top?.daysSinceVisit || 'too many'} days. You have ${critical.length} critical customers representing $${atRiskRevenue.toFixed(0)} in at-risk revenue. Today's action: reach out to your highest-risk customer. One call could recover over $${((top?.avgTransactionValue || 8) * ANNUAL_VISITS).toFixed(0)} for the year.`
     }
 
     const voiceId = businessData.voiceId || '21m00Tcm4TlvDq8ikWAM'

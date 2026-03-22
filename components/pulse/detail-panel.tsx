@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Customer } from "@/lib/rfm"
+import { annualizedValue } from "@/lib/rfm"
 import { LineChart, Line, ResponsiveContainer, YAxis, Area, AreaChart } from "recharts"
 import { usePulse } from "./client-layout"
 import confetti from "canvas-confetti"
@@ -501,7 +502,7 @@ Powered by Pulse`
               }}
             >
               {wonBack ? (
-                <><Check className="w-5 h-5" /> Retained! +${(customer.avgTransactionValue * 12).toFixed(0)}</>
+                <><Check className="w-5 h-5" /> Retained! +${annualizedValue(customer.avgTransactionValue).toFixed(0)}</>
               ) : (
                 <><CheckCircle2 className="w-5 h-5" /> Mark as Retained</>
               )}

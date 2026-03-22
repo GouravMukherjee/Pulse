@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext } from "react"
 import { AppShell } from "./app-shell"
 import type { Customer } from "@/lib/rfm"
+import { annualizedValue } from "@/lib/rfm"
 
 export interface BusinessProfile {
   location: string
@@ -136,7 +137,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   const addWonBack = (customer: Customer) => {
     if (wonBackIds.has(customer.id)) return
-    const recovery = customer.avgTransactionValue * 12
+    const recovery = annualizedValue(customer.avgTransactionValue)
     setWonBackIds((prev) => new Set(prev).add(customer.id))
     setRevenueRecovered((prev) => prev + recovery)
     setWonBackCount((prev) => prev + 1)

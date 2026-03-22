@@ -3,6 +3,7 @@
 import { memo } from "react"
 import { cn } from "@/lib/utils"
 import type { Customer } from "@/lib/rfm"
+import { annualizedValue } from "@/lib/rfm"
 import { TrendingDown, Zap } from "lucide-react"
 
 interface CustomerCardProps {
@@ -63,7 +64,7 @@ const patternLabels: Record<string, { label: string; icon?: typeof TrendingDown 
 function CustomerCardComponent({ customer, onClick, isSelected }: CustomerCardProps) {
   const risk = getRiskInfo(customer.churnScore, customer.confidenceLevel)
   const pattern = patternLabels[customer.pattern] || patternLabels.unknown
-  const atRiskRevenue = customer.avgTransactionValue * 12
+  const atRiskRevenue = annualizedValue(customer.avgTransactionValue)
 
   return (
     <button

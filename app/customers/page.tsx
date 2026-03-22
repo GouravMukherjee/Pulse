@@ -6,6 +6,7 @@ import { DetailPanel } from "@/components/pulse/detail-panel"
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Customer } from "@/lib/rfm"
+import { annualizedValue } from "@/lib/rfm"
 
 type FilterType = "all" | "critical" | "at-risk" | "watch" | "loyal"
 type SortKey = "name" | "health" | "risk" | "days"
@@ -77,7 +78,7 @@ export default function CustomersPage() {
     result.sort((a, b) => {
       if (sortKey === "name") return a.name.localeCompare(b.name) * dir
       if (sortKey === "health") return (a.churnScore - b.churnScore) * dir
-      if (sortKey === "risk") return ((a.avgTransactionValue * 12) - (b.avgTransactionValue * 12)) * dir
+      if (sortKey === "risk") return (annualizedValue(a.avgTransactionValue) - annualizedValue(b.avgTransactionValue)) * dir
       if (sortKey === "days") return (a.daysSinceVisit - b.daysSinceVisit) * dir
       return 0
     })
@@ -205,7 +206,7 @@ export default function CustomersPage() {
           <div>
             {filteredCustomers.map((customer, i) => {
               const health = getHealthInfo(customer.churnScore, customer.confidenceLevel)
-              const atRisk = customer.avgTransactionValue * 12
+              const atRisk = annualizedValue(customer.avgTransactionValue)
               const isSelected = selectedCustomer?.id === customer.id
               const isDimmed = customer.confidenceLevel === "low"
 
