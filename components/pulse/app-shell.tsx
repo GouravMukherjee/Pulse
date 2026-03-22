@@ -113,7 +113,7 @@ export function AppShell({ children, businessType }: AppShellProps) {
           ) : (
             <Volume2 className="w-3.5 h-3.5" />
           )}
-          <span className="hidden sm:inline">{isPlaying ? "Stop" : "Audio Summary"}</span>
+          <span className="hidden sm:inline">{isPlaying ? "Stop" : "Daily Briefing"}</span>
         </button>
       </header>
 

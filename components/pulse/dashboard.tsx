@@ -237,7 +237,7 @@ export function Dashboard({ customers, businessType, onBusinessTypeChange }: Das
             type="days"
           />
           <StatCard
-            title="Won Back"
+            title="Retained"
             value={wonBackCount > 0 ? `$${revenueRecovered.toLocaleString()}` : "$0"}
             subtitle={wonBackCount > 0 ? `${wonBackCount} customer${wonBackCount !== 1 ? "s" : ""} returned` : "Start reaching out!"}
             type="recovered"

@@ -80,7 +80,7 @@ export default function RetentionPage() {
                     ${revenueRecovered.toLocaleString()} recovered
                   </p>
                   <p className="text-sm text-[#475569]">
-                    {wonBackCount} customer{wonBackCount !== 1 ? "s" : ""} won back so far
+                    {wonBackCount} customer{wonBackCount !== 1 ? "s" : ""} Retained so far
                   </p>
                 </>
               ) : (

@@ -279,7 +279,7 @@ body::before {
   100% { background-position: -200% 0; }
 }
 
-/* Counter bounce on Won Back */
+/* Counter bounce on Retained */
 @keyframes counterBounce {
   0%   { transform: scale(1); }
   50%  { transform: scale(1.08); }

@@ -46,7 +46,7 @@ Customer data:
 - ${groupChurns.length} group churn patterns
 - At-risk revenue: $${atRiskRevenue.toFixed(0)}
 - Revenue recovered: $${revenueRecovered || 0}
-- Won back: ${wonBackCount || 0}
+- Retained: ${wonBackCount || 0}
 - Top risk: ${topAtRisk[0]?.name || 'N/A'}, ${topAtRisk[0]?.daysSinceVisit || 0} days gone
 ${groupChurns.length > 0 ? `\nGROUP CHURN ALERT: ${groupChurns.length} customers stopped around the same date: ${groupChurns.map(c => c.name).join(', ')}` : ''}
 

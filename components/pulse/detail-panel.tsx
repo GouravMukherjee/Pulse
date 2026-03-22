@@ -456,7 +456,7 @@ Powered by Pulse`
               </p>
             </div>
 
-            {/* Status Buttons — Contacted, Responded, Won Back (§7.3-8) */}
+            {/* Status Buttons — Contacted, Responded, Retained (§7.3-8) */}
             <div className="flex gap-2">
               {/* Contacted */}
               <button
@@ -489,7 +489,7 @@ Powered by Pulse`
               </button>
             </div>
 
-            {/* Won Back — prominent, solid green (§7.3-8) */}
+            {/* Retained — prominent, solid green (§7.3-8) */}
             <button
               onClick={handleWonBack}
               disabled={wonBack}
@@ -502,9 +502,9 @@ Powered by Pulse`
               }}
             >
               {wonBack ? (
-                <><Check className="w-5 h-5" /> Won Back! +${(customer.avgTransactionValue * 12).toFixed(0)}</>
+                <><Check className="w-5 h-5" /> Retained! +${(customer.avgTransactionValue * 12).toFixed(0)}</>
               ) : (
-                <><CheckCircle2 className="w-5 h-5" /> Mark as Won Back</>
+                <><CheckCircle2 className="w-5 h-5" /> Mark as Retained</>
               )}
             </button>
           </div>
