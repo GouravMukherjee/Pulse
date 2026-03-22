@@ -4,6 +4,12 @@ import { useState, useEffect, createContext, useContext } from "react"
 import { AppShell } from "./app-shell"
 import type { Customer } from "@/lib/rfm"
 
+export interface BusinessProfile {
+  location: string
+  description: string
+  popularProducts: string[]
+}
+
 interface BusinessData {
   name: string
   type: string
@@ -36,6 +42,8 @@ interface PulseContextType {
   wonBackCount: number
   wonBackIds: Set<string>
   addWonBack: (customer: Customer) => void
+  businessProfile: BusinessProfile
+  setBusinessProfile: (profile: BusinessProfile) => void
 }
 
 const PulseContext = createContext<PulseContextType | null>(null)
@@ -46,28 +54,15 @@ export function usePulse() {
   return ctx
 }
 
+const PROFILE_KEY = "pulse-business-profile"
+
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [businessType, setBusinessType] = useState<"coffee_shop" | "gym" | "boutique">("coffee_shop")
   const [revenueRecovered, setRevenueRecovered] = useState(0)
   const [wonBackCount, setWonBackCount] = useState(0)
   const [wonBackIds, setWonBackIds] = useState<Set<string>>(new Set())
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [businessData, setBusinessData] = useState<Record<string, BusinessData>>({})
-  const [catalogData, setCatalogData] = useState<ProductData[]>([])
-  const [loaded, setLoaded] = useState(false)
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/customers").then((r) => r.json()),
-      fetch("/api/businesses").then((r) => r.json()),
-      fetch("/api/products").then((r) => r.json()),
-    ]).then(([custData, bizData, prodData]) => {
-      setCustomers(custData.customers || custData)
-      setBusinessData(bizData)
-      setCatalogData(prodData)
-      setLoaded(true)
-    })
-  }, [])
+  const customers = customersData as unknown as Customer[]
 
   const addWonBack = (customer: Customer) => {
     const recovery = customer.avgTransactionValue * 12
@@ -87,10 +82,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <PulseContext.Provider value={{ customers, businessType, businessData, catalogData, revenueRecovered, wonBackCount, wonBackIds, addWonBack }}>
-      <AppShell businessType={businessType}>
+    <PulseContext.Provider value={{ customers, businessType, revenueRecovered, wonBackCount, wonBackIds, addWonBack }}>
+      <AppShell
+        businessType={businessType}
+      >
         {children}
       </AppShell>
     </PulseContext.Provider>
   )
 }
+
