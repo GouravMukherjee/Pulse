@@ -66,8 +66,6 @@ function fireConfetti() {
 export function DetailPanel({ customer, businessType, onClose, onWonBack }: DetailPanelProps) {
   const [activeAction, setActiveAction] = useState<ActionType>("email")
   const [isPlaying, setIsPlaying] = useState(false)
-  const [contacted, setContacted] = useState(false)
-  const [responded, setResponded] = useState(false)
   const [wonBack, setWonBack] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isLoadingContent, setIsLoadingContent] = useState(false)
@@ -76,7 +74,10 @@ export function DetailPanel({ customer, businessType, onClose, onWonBack }: Deta
   const [offerContent, setOfferContent] = useState({ headline: "", details: "", code: "" })
   const [orchestrateData, setOrchestrateData] = useState<any>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const { businessData, catalogData, wonBackIds } = usePulse()
+  const { businessData, catalogData, wonBackIds, contactedIds, respondedIds, markContacted, markResponded } = usePulse()
+
+  const contacted = customer ? contactedIds.has(customer.id) : false
+  const responded = customer ? respondedIds.has(customer.id) : false
 
   const business = businessData[businessType]
 
@@ -145,8 +146,6 @@ Powered by Pulse`
   useEffect(() => {
     if (customer) {
       setWonBack(wonBackIds.has(customer.id))
-      setContacted(wonBackIds.has(customer.id))
-      setResponded(wonBackIds.has(customer.id))
       setCopied(false)
       setOrchestrateData(null)
       generateContent()
@@ -460,7 +459,7 @@ Powered by Pulse`
             <div className="flex gap-2">
               {/* Contacted */}
               <button
-                onClick={() => setContacted(true)}
+                onClick={() => customer && markContacted(customer.id)}
                 className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all"
                 style={{
                   fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 13, borderRadius: 12,
@@ -475,7 +474,7 @@ Powered by Pulse`
 
               {/* Responded */}
               <button
-                onClick={() => setResponded(true)}
+                onClick={() => customer && markResponded(customer.id)}
                 className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all"
                 style={{
                   fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 13, borderRadius: 12,

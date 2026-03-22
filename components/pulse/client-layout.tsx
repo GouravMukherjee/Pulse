@@ -44,7 +44,11 @@ interface PulseContextType {
   revenueRecovered: number
   wonBackCount: number
   wonBackIds: Set<string>
+  contactedIds: Set<string>
+  respondedIds: Set<string>
   addWonBack: (customer: Customer) => void
+  markContacted: (customerId: string) => void
+  markResponded: (customerId: string) => void
   businessProfile: BusinessProfile
   setBusinessProfile: (profile: BusinessProfile) => void
 }
@@ -63,18 +67,33 @@ const defaultProfile: BusinessProfile = {
   popularProducts: [],
 }
 
-function loadRetained(): { ids: string[]; revenue: number } {
-  if (typeof window === "undefined") return { ids: [], revenue: 0 }
-  try {
-    const raw = localStorage.getItem("pulse_retained")
-    if (raw) return JSON.parse(raw)
-  } catch {}
-  return { ids: [], revenue: 0 }
+interface PersistedState {
+  wonBackIds: string[]
+  contactedIds: string[]
+  respondedIds: string[]
+  revenue: number
 }
 
-function saveRetained(ids: string[], revenue: number) {
+function loadPersisted(): PersistedState {
+  if (typeof window === "undefined") return { wonBackIds: [], contactedIds: [], respondedIds: [], revenue: 0 }
   try {
-    localStorage.setItem("pulse_retained", JSON.stringify({ ids, revenue }))
+    const raw = localStorage.getItem("pulse_retained")
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return {
+        wonBackIds: parsed.ids || parsed.wonBackIds || [],
+        contactedIds: parsed.contactedIds || [],
+        respondedIds: parsed.respondedIds || [],
+        revenue: parsed.revenue || 0,
+      }
+    }
+  } catch {}
+  return { wonBackIds: [], contactedIds: [], respondedIds: [], revenue: 0 }
+}
+
+function savePersisted(state: PersistedState) {
+  try {
+    localStorage.setItem("pulse_retained", JSON.stringify(state))
   } catch {}
 }
 
@@ -83,6 +102,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [revenueRecovered, setRevenueRecovered] = useState(0)
   const [wonBackCount, setWonBackCount] = useState(0)
   const [wonBackIds, setWonBackIds] = useState<Set<string>>(new Set())
+  const [contactedIds, setContactedIds] = useState<Set<string>>(new Set())
+  const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set())
   const [customers, setCustomers] = useState<Customer[]>([])
   const [businessData, setBusinessData] = useState<Record<string, BusinessData>>({})
   const [catalogData, setCatalogData] = useState<ProductData[]>([])
@@ -102,12 +123,14 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    const saved = loadRetained()
-    if (saved.ids.length > 0) {
-      setWonBackIds(new Set(saved.ids))
-      setWonBackCount(saved.ids.length)
+    const saved = loadPersisted()
+    if (saved.wonBackIds.length > 0) {
+      setWonBackIds(new Set(saved.wonBackIds))
+      setWonBackCount(saved.wonBackIds.length)
       setRevenueRecovered(saved.revenue)
     }
+    if (saved.contactedIds.length > 0) setContactedIds(new Set(saved.contactedIds))
+    if (saved.respondedIds.length > 0) setRespondedIds(new Set(saved.respondedIds))
 
     try {
       const savedProfile = localStorage.getItem("pulse_profile")
@@ -126,18 +149,43 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
+  const persistCurrent = (overrides: Partial<PersistedState>) => {
+    const current: PersistedState = {
+      wonBackIds: Array.from(wonBackIds),
+      contactedIds: Array.from(contactedIds),
+      respondedIds: Array.from(respondedIds),
+      revenue: revenueRecovered,
+      ...overrides,
+    }
+    savePersisted(current)
+  }
+
   const addWonBack = (customer: Customer) => {
     if (wonBackIds.has(customer.id)) return
     const recovery = customer.avgTransactionValue * 12
     setWonBackIds((prev) => {
       const next = new Set(prev).add(customer.id)
-      const newIds = Array.from(next)
-      const newRevenue = revenueRecovered + recovery
-      saveRetained(newIds, newRevenue)
+      persistCurrent({ wonBackIds: Array.from(next), revenue: revenueRecovered + recovery })
       return next
     })
     setRevenueRecovered((prev) => prev + recovery)
     setWonBackCount((prev) => prev + 1)
+  }
+
+  const markContacted = (customerId: string) => {
+    setContactedIds((prev) => {
+      const next = new Set(prev).add(customerId)
+      persistCurrent({ contactedIds: Array.from(next) })
+      return next
+    })
+  }
+
+  const markResponded = (customerId: string) => {
+    setRespondedIds((prev) => {
+      const next = new Set(prev).add(customerId)
+      persistCurrent({ respondedIds: Array.from(next) })
+      return next
+    })
   }
 
   if (!loaded) {
@@ -151,7 +199,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <PulseContext.Provider value={{ customers, businessType, businessData, catalogData, revenueRecovered, wonBackCount, wonBackIds, addWonBack, businessProfile, setBusinessProfile }}>
+    <PulseContext.Provider value={{ customers, businessType, businessData, catalogData, revenueRecovered, wonBackCount, wonBackIds, contactedIds, respondedIds, addWonBack, markContacted, markResponded, businessProfile, setBusinessProfile }}>
       <AppShell businessType={businessType}>
         {children}
       </AppShell>
