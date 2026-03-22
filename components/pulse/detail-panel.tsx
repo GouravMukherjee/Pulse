@@ -204,7 +204,7 @@ Powered by Pulse`
       <div className="fixed inset-0 bg-black/10 backdrop-blur-sm z-40" onClick={onClose} />
 
       {/* Panel — spring slide-in (§7.3) */}
-      <div className="detail-panel fixed top-0 right-0 bottom-0 w-full max-w-[380px] z-50 animate-slide-in-right">
+      <div className="detail-panel fixed top-0 right-0 bottom-0 w-full max-w-[440px] z-50 animate-slide-in-right">
         <div
           className="h-full flex flex-col overflow-y-auto"
           style={{
