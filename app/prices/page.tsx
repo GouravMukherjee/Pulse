@@ -243,7 +243,7 @@ export default function PricesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
-  // Load products from localStorage first, then API
+  // Load products and your-prices from Supabase (localStorage for instant UI)
   useEffect(() => {
     try {
       const saved = localStorage.getItem("pulse_profile")
@@ -257,11 +257,23 @@ export default function PricesPage() {
       if (savedPrices) setYourPrices(JSON.parse(savedPrices))
     } catch {}
 
-    fetch("/api/profile")
-      .then((r) => r.json())
-      .then((profile) => {
+    Promise.all([
+      fetch("/api/profile").then((r) => r.json()),
+      fetch("/api/your-prices").then((r) => r.json()).catch(() => ({})),
+    ])
+      .then(([profile, supabasePrices]) => {
         if (profile.popularProducts?.length > 0) {
           setProducts(profile.popularProducts)
+        }
+        // Merge Supabase prices (they take precedence)
+        if (supabasePrices && Object.keys(supabasePrices).length > 0) {
+          setYourPrices((prev) => {
+            const merged = { ...prev }
+            for (const [k, v] of Object.entries(supabasePrices)) {
+              merged[k] = String(v)
+            }
+            return merged
+          })
         }
         setLoaded(true)
       })
@@ -350,6 +362,15 @@ export default function PricesPage() {
       try { localStorage.setItem("pulse_your_prices", JSON.stringify(next)) } catch {}
       return next
     })
+    // Persist to Supabase
+    const parsed = parseFloat(value)
+    if (!isNaN(parsed) && parsed > 0) {
+      fetch("/api/your-prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product, price: parsed }),
+      }).catch(() => {})
+    }
   }
 
   const isLoading = marketData.some((d) => d.loading)

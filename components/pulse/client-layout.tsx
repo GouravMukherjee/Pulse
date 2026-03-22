@@ -3,9 +3,6 @@
 import { useState, useEffect, createContext, useContext } from "react"
 import { AppShell } from "./app-shell"
 import type { Customer } from "@/lib/rfm"
-import rawCustomers from "@/lib/data/customers.json"
-import rawBusiness from "@/lib/data/business.json"
-import rawCatalog from "@/lib/data/catalog.json"
 
 export interface BusinessProfile {
   location: string
@@ -67,36 +64,6 @@ const defaultProfile: BusinessProfile = {
   popularProducts: [],
 }
 
-interface PersistedState {
-  wonBackIds: string[]
-  contactedIds: string[]
-  respondedIds: string[]
-  revenue: number
-}
-
-function loadPersisted(): PersistedState {
-  if (typeof window === "undefined") return { wonBackIds: [], contactedIds: [], respondedIds: [], revenue: 0 }
-  try {
-    const raw = localStorage.getItem("pulse_retained")
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      return {
-        wonBackIds: parsed.ids || parsed.wonBackIds || [],
-        contactedIds: parsed.contactedIds || [],
-        respondedIds: parsed.respondedIds || [],
-        revenue: parsed.revenue || 0,
-      }
-    }
-  } catch {}
-  return { wonBackIds: [], contactedIds: [], respondedIds: [], revenue: 0 }
-}
-
-function savePersisted(state: PersistedState) {
-  try {
-    localStorage.setItem("pulse_retained", JSON.stringify(state))
-  } catch {}
-}
-
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [businessType] = useState<"coffee_shop" | "gym" | "boutique">("coffee_shop")
   const [revenueRecovered, setRevenueRecovered] = useState(0)
@@ -123,69 +90,85 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    const saved = loadPersisted()
-    if (saved.wonBackIds.length > 0) {
-      setWonBackIds(new Set(saved.wonBackIds))
-      setWonBackCount(saved.wonBackIds.length)
-      setRevenueRecovered(saved.revenue)
-    }
-    if (saved.contactedIds.length > 0) setContactedIds(new Set(saved.contactedIds))
-    if (saved.respondedIds.length > 0) setRespondedIds(new Set(saved.respondedIds))
-
+    // Load from localStorage for instant UI
     try {
       const savedProfile = localStorage.getItem("pulse_profile")
       if (savedProfile) setBusinessProfileState(JSON.parse(savedProfile))
     } catch {}
 
+    // Fetch all data from Supabase-backed APIs
     Promise.all([
       fetch("/api/customers").then((r) => r.json()),
       fetch("/api/businesses").then((r) => r.json()),
       fetch("/api/products").then((r) => r.json()),
-    ]).then(([custData, bizData, prodData]) => {
+      fetch("/api/customer-status").then((r) => r.json()).catch(() => ({})),
+    ]).then(([custData, bizData, prodData, statusData]) => {
       setCustomers(custData.customers || custData)
       setBusinessData(bizData)
       setCatalogData(prodData)
+
+      // Restore customer statuses from Supabase
+      const wonIds = new Set<string>()
+      const contIds = new Set<string>()
+      const respIds = new Set<string>()
+      let totalRevenue = 0
+
+      for (const [id, status] of Object.entries(statusData as Record<string, any>)) {
+        if (status.retained) {
+          wonIds.add(id)
+          totalRevenue += status.revenueRecovered || 0
+        }
+        if (status.contacted) contIds.add(id)
+        if (status.responded) respIds.add(id)
+      }
+
+      if (wonIds.size > 0) {
+        setWonBackIds(wonIds)
+        setWonBackCount(wonIds.size)
+        setRevenueRecovered(totalRevenue)
+      }
+      if (contIds.size > 0) setContactedIds(contIds)
+      if (respIds.size > 0) setRespondedIds(respIds)
+
       setLoaded(true)
     })
   }, [])
 
-  const persistCurrent = (overrides: Partial<PersistedState>) => {
-    const current: PersistedState = {
-      wonBackIds: Array.from(wonBackIds),
-      contactedIds: Array.from(contactedIds),
-      respondedIds: Array.from(respondedIds),
-      revenue: revenueRecovered,
-      ...overrides,
-    }
-    savePersisted(current)
-  }
-
   const addWonBack = (customer: Customer) => {
     if (wonBackIds.has(customer.id)) return
     const recovery = customer.avgTransactionValue * 12
-    setWonBackIds((prev) => {
-      const next = new Set(prev).add(customer.id)
-      persistCurrent({ wonBackIds: Array.from(next), revenue: revenueRecovered + recovery })
-      return next
-    })
+    setWonBackIds((prev) => new Set(prev).add(customer.id))
     setRevenueRecovered((prev) => prev + recovery)
     setWonBackCount((prev) => prev + 1)
+
+    // Persist to Supabase
+    fetch("/api/customer-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: customer.id, retained: true, revenueRecovered: recovery }),
+    }).catch(() => {})
   }
 
   const markContacted = (customerId: string) => {
-    setContactedIds((prev) => {
-      const next = new Set(prev).add(customerId)
-      persistCurrent({ contactedIds: Array.from(next) })
-      return next
-    })
+    setContactedIds((prev) => new Set(prev).add(customerId))
+
+    // Persist to Supabase
+    fetch("/api/customer-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId, contacted: true }),
+    }).catch(() => {})
   }
 
   const markResponded = (customerId: string) => {
-    setRespondedIds((prev) => {
-      const next = new Set(prev).add(customerId)
-      persistCurrent({ respondedIds: Array.from(next) })
-      return next
-    })
+    setRespondedIds((prev) => new Set(prev).add(customerId))
+
+    // Persist to Supabase
+    fetch("/api/customer-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId, responded: true }),
+    }).catch(() => {})
   }
 
   if (!loaded) {
