@@ -108,44 +108,48 @@ export function AppShell({ children, businessType }: AppShellProps) {
         </button>
       </header>
 
-      {/* ---- Sidebar (§7.4) — 280px, glass-strong ---- */}
-      <aside
-        className="hidden md:flex fixed top-16 left-0 bottom-0 w-[280px] flex-col py-6 px-4 z-40"
-        style={{
-          background: "rgba(255,255,255,0.75)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-          borderRight: "1px solid rgba(255,255,255,0.4)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
-        }}
-      >
-        <nav className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
-                  isActive
-                    ? "bg-[rgba(8,145,178,0.1)]"
-                    : "text-[#475569] hover:text-[#0f172a] hover:bg-white/40"
-                )}
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? "#0891b2" : undefined,
-                  borderLeft: isActive ? "3px solid #0891b2" : "3px solid transparent",
-                }}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-      </aside>
+      {/* ---- Sidebar — auto-hide, slides in on hover ---- */}
+      <div className="hidden md:block fixed top-16 left-0 bottom-0 z-40 group/sidebar">
+        {/* Hover trigger zone — always visible, thin strip */}
+        <div className="absolute top-0 left-0 bottom-0 w-3" />
+        <aside
+          className="h-full w-[280px] flex flex-col py-6 px-4 -translate-x-[264px] group-hover/sidebar:translate-x-0 transition-transform duration-300 ease-in-out"
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderRight: "1px solid rgba(255,255,255,0.4)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+          }}
+        >
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
+                    isActive
+                      ? "bg-[rgba(8,145,178,0.1)]"
+                      : "text-[#475569] hover:text-[#0f172a] hover:bg-white/40"
+                  )}
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? "#0891b2" : undefined,
+                    borderLeft: isActive ? "3px solid #0891b2" : "3px solid transparent",
+                  }}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
+      </div>
 
       {/* ---- Mobile Bottom Nav ---- */}
       <nav
@@ -180,7 +184,7 @@ export function AppShell({ children, businessType }: AppShellProps) {
       </nav>
 
       {/* ---- Main Content ---- */}
-      <main className="pt-16 md:pl-[280px] pb-16 md:pb-0 min-h-screen">
+      <main className="pt-16 pb-16 md:pb-0 min-h-screen">
         <div className="max-w-[1440px] mx-auto px-6 py-6">
           {children}
         </div>
