@@ -20,12 +20,25 @@ export default function BusinessPage() {
   const [errors, setErrors] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetch("/api/profile")
-      .then((r) => r.json())
-      .then((profile: BusinessProfile) => {
+    // Load from localStorage first (instant), then try API
+    try {
+      const saved = localStorage.getItem("pulse_profile")
+      if (saved) {
+        const profile: BusinessProfile = JSON.parse(saved)
         setLocation(profile.location || "")
         setDescription(profile.description || "")
         setPopularProducts(profile.popularProducts || [])
+      }
+    } catch {}
+
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((profile: BusinessProfile) => {
+        if (profile.location) {
+          setLocation(profile.location)
+          setDescription(profile.description || "")
+          setPopularProducts(profile.popularProducts || [])
+        }
       })
       .catch(() => {})
   }, [])
@@ -55,27 +68,32 @@ export default function BusinessPage() {
     }
 
     setSaving(true)
+    const profileData = {
+      location: location.trim(),
+      description: description.trim(),
+      popularProducts,
+    }
+
+    try {
+      localStorage.setItem("pulse_profile", JSON.stringify(profileData))
+    } catch {}
+
     try {
       const res = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: location.trim(),
-          description: description.trim(),
-          popularProducts,
-        }),
+        body: JSON.stringify(profileData),
       })
 
       if (!res.ok) throw new Error("Save failed")
-
-      setSaved(true)
-      setErrors({})
-      setTimeout(() => setSaved(false), 2500)
     } catch (e) {
-      console.error("Failed to save profile:", e)
-    } finally {
-      setSaving(false)
+      console.error("API save failed (localStorage still saved):", e)
     }
+
+    setSaved(true)
+    setErrors({})
+    setTimeout(() => setSaved(false), 2500)
+    setSaving(false)
   }
 
   return (

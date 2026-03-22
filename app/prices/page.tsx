@@ -243,12 +243,26 @@ export default function PricesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
-  // Load products from DB profile
+  // Load products from localStorage first, then API
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("pulse_profile")
+      if (saved) {
+        const profile = JSON.parse(saved)
+        if (profile.popularProducts?.length > 0) {
+          setProducts(profile.popularProducts)
+        }
+      }
+      const savedPrices = localStorage.getItem("pulse_your_prices")
+      if (savedPrices) setYourPrices(JSON.parse(savedPrices))
+    } catch {}
+
     fetch("/api/profile")
       .then((r) => r.json())
       .then((profile) => {
-        setProducts(profile.popularProducts || [])
+        if (profile.popularProducts?.length > 0) {
+          setProducts(profile.popularProducts)
+        }
         setLoaded(true)
       })
       .catch(() => setLoaded(true))
@@ -331,7 +345,11 @@ export default function PricesPage() {
   }
 
   const handlePriceChange = (product: string, value: string) => {
-    setYourPrices((prev) => ({ ...prev, [product]: value }))
+    setYourPrices((prev) => {
+      const next = { ...prev, [product]: value }
+      try { localStorage.setItem("pulse_your_prices", JSON.stringify(next)) } catch {}
+      return next
+    })
   }
 
   const isLoading = marketData.some((d) => d.loading)
