@@ -76,7 +76,7 @@ export function DetailPanel({ customer, businessType, onClose, onWonBack }: Deta
   const [offerContent, setOfferContent] = useState({ headline: "", details: "", code: "" })
   const [orchestrateData, setOrchestrateData] = useState<any>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const { businessData, catalogData } = usePulse()
+  const { businessData, catalogData, wonBackIds } = usePulse()
 
   const business = businessData[businessType]
 
@@ -144,14 +144,14 @@ Powered by Pulse`
 
   useEffect(() => {
     if (customer) {
-      setWonBack(false)
-      setContacted(false)
-      setResponded(false)
+      setWonBack(wonBackIds.has(customer.id))
+      setContacted(wonBackIds.has(customer.id))
+      setResponded(wonBackIds.has(customer.id))
       setCopied(false)
       setOrchestrateData(null)
       generateContent()
     }
-  }, [customer, generateContent])
+  }, [customer, generateContent, wonBackIds])
 
   const handlePlayVoice = async () => {
     if (isPlaying) {

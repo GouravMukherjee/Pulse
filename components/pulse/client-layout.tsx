@@ -63,6 +63,21 @@ const defaultProfile: BusinessProfile = {
   popularProducts: [],
 }
 
+function loadRetained(): { ids: string[]; revenue: number } {
+  if (typeof window === "undefined") return { ids: [], revenue: 0 }
+  try {
+    const raw = localStorage.getItem("pulse_retained")
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return { ids: [], revenue: 0 }
+}
+
+function saveRetained(ids: string[], revenue: number) {
+  try {
+    localStorage.setItem("pulse_retained", JSON.stringify({ ids, revenue }))
+  } catch {}
+}
+
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const [businessType] = useState<"coffee_shop" | "gym" | "boutique">("coffee_shop")
   const [revenueRecovered, setRevenueRecovered] = useState(0)
@@ -76,28 +91,53 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   const setBusinessProfile = (profile: BusinessProfile) => {
     setBusinessProfileState(profile)
+    try {
+      localStorage.setItem("pulse_profile", JSON.stringify(profile))
+    } catch {}
+    fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(profile),
+    }).catch(() => {})
   }
 
   useEffect(() => {
+    const saved = loadRetained()
+    if (saved.ids.length > 0) {
+      setWonBackIds(new Set(saved.ids))
+      setWonBackCount(saved.ids.length)
+      setRevenueRecovered(saved.revenue)
+    }
+
+    try {
+      const savedProfile = localStorage.getItem("pulse_profile")
+      if (savedProfile) setBusinessProfileState(JSON.parse(savedProfile))
+    } catch {}
+
     Promise.all([
       fetch("/api/customers").then((r) => r.json()),
       fetch("/api/businesses").then((r) => r.json()),
       fetch("/api/products").then((r) => r.json()),
-      fetch("/api/profile").then((r) => r.json()),
-    ]).then(([custData, bizData, prodData, profileData]) => {
+    ]).then(([custData, bizData, prodData]) => {
       setCustomers(custData.customers || custData)
       setBusinessData(bizData)
       setCatalogData(prodData)
-      if (profileData.location) setBusinessProfileState(profileData)
       setLoaded(true)
     })
   }, [])
 
   const addWonBack = (customer: Customer) => {
+    if (wonBackIds.has(customer.id)) return
     const recovery = customer.avgTransactionValue * 12
+    setWonBackIds((prev) => {
+      const next = new Set(prev).add(customer.id)
+      const newIds = Array.from(next)
+      const newRevenue = revenueRecovered + recovery
+      saveRetained(newIds, newRevenue)
+      return next
+    })
     setRevenueRecovered((prev) => prev + recovery)
     setWonBackCount((prev) => prev + 1)
-    setWonBackIds((prev) => new Set(prev).add(customer.id))
   }
 
   if (!loaded) {
