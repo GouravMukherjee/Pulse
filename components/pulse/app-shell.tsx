@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, Target, Coffee, Activity } from "lucide-react"
+import { LayoutDashboard, Users, Target, Activity, Volume2, Loader2 } from "lucide-react"
 import businessData from "@/lib/data/business.json"
+import { usePulse } from "./client-layout"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,43 @@ interface AppShellProps {
 export function AppShell({ children, businessType }: AppShellProps) {
   const pathname = usePathname()
   const biz = businessData[businessType as keyof typeof businessData]
+  const { customers, revenueRecovered, wonBackCount } = usePulse()
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  const handleAudioSummary = async () => {
+    setIsPlaying(true)
+    try {
+      const response = await fetch('/api/briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customers,
+          business: biz,
+          revenueRecovered,
+          wonBackCount,
+        }),
+      })
+
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('audio')) {
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        audio.onended = () => {
+          setIsPlaying(false)
+          URL.revokeObjectURL(url)
+        }
+        audio.play()
+      } else {
+        const data = await response.json()
+        console.log('Briefing script (no audio):', data.script)
+        setIsPlaying(false)
+      }
+    } catch (e) {
+      console.error('Audio summary failed:', e)
+      setIsPlaying(false)
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -46,18 +85,27 @@ export function AppShell({ children, businessType }: AppShellProps) {
 
         {/* Center — business name + green status dot */}
         <div className="hidden md:flex items-center gap-2.5">
-          <Coffee className="w-4 h-4 text-[#475569]" />
+          <Activity className="w-4 h-4 text-[#475569]" />
           <span style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 14, color: "#475569" }}>
             {biz.name}
           </span>
           <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
         </div>
 
-        {/* Right — Business badge */}
-        <div className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-white shadow-sm" style={{ background: "#0891b2", fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 14 }}>
-          <Coffee className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Coffee</span>
-        </div>
+        {/* Right — Audio Summary */}
+        <button
+          onClick={handleAudioSummary}
+          disabled={isPlaying}
+          className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed"
+          style={{ background: "#0891b2", fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 14 }}
+        >
+          {isPlaying ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Volume2 className="w-3.5 h-3.5" />
+          )}
+          <span className="hidden sm:inline">{isPlaying ? "Playing..." : "Audio Summary"}</span>
+        </button>
       </header>
 
       {/* ---- Sidebar (§7.4) — 280px, glass-strong ---- */}

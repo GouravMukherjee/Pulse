@@ -10,8 +10,6 @@ export async function POST(request: Request) {
 
     const voiceMap: Record<string, string> = {
       coffee_shop: '21m00Tcm4TlvDq8ikWAM',
-      gym: 'EXAVITQu4vr4xnSDxMaL',
-      boutique: 'VR6AewLBTwakI28Z5BxO'
     }
 
     const voiceId = voiceMap[businessType] || voiceMap.coffee_shop
