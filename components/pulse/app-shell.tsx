@@ -87,7 +87,7 @@ export function AppShell({ children, businessType }: AppShellProps) {
       >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <img src="/apple-icon.png" alt="Pulse" className="w-8 h-8 rounded-lg object-contain" />
+          <img src="/apple-icon.png" alt="Pulse" className="w-15 h-15 rounded-lg object-contain" />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "#0f172a", letterSpacing: "-0.01em" }}>
             Pulse
           </span>
